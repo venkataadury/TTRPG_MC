@@ -198,6 +198,7 @@ class CharacterData:
         paired_damage=[]
         for r in rscript:
             damage,self.variables[r[0]],crit=r[1].execute(self)
+            self.variables[r[0]+".crit_"]=crit
             dlabel=r[1].cmd_name
             if crit:
                 dlabel+=" (Critical)"
@@ -283,7 +284,8 @@ class CharacterData:
     
     def short_rest(self):
         for r in self.shortrest_script:
-            _,self.variables[r[0]],_=r[1].execute(self)
+            _,self.variables[r[0]],crit=r[1].execute(self)
+            self.variables[r[0]+".crit_"]=crit
         return 0,[]
 
 class Command:
