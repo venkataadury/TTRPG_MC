@@ -1,6 +1,7 @@
 import numpy as np
 from dice import *
 import re
+import tqdm
 
 def chance(p):
     return np.random.uniform(0,1)<p
@@ -73,6 +74,7 @@ class CharacterData:
         self.globals=dict()
         self.tactics=dict()
         self.variables=dict()
+        self.aliases=dict()
         self.round_script=[]
         self.specific_round_scripts=dict()
         self.shortrest_script=[]
@@ -95,7 +97,7 @@ class CharacterData:
             l=l.strip()
             l=l.split(';')[0].strip()
 
-            if mode not in ["Tactics","Round","ShortRest"] and len(l):
+            if mode not in ["Tactics","Round","ShortRest","Alias"] and len(l):
                 for att in self.attributes:
                     l=l.replace("$"+att,str(self.attributes[att]))
                 for v in self.variables:
@@ -156,8 +158,24 @@ class CharacterData:
 
                 self.tactics[tname]=Tactic(aroll,dc,tsucc,tfail,extra_crit_damage=extra_crit_damage)
                 if not silent: print("\tFound tactic:",tname," -\t",tsucc," (or",tfail if tfail is not None else 0,"on failure)")
+            elif mode=="Alias":
+                if mode_param is None:
+                    raise ValueError("Alias name not present!")
+                l=l.strip()
+                if "<" in l:
+                    l=l.split("<")
+                    var=l[0].strip()
+                    cmd=l[1].strip()
+                else:
+                    var="_"
+                    cmd=l.strip()
+                if mode_param in self.aliases:
+                    self.aliases[mode_param].append((var,Command(cmd)))
+                else:
+                    self.aliases[mode_param]=[(var,Command(cmd))]
             elif mode=="Round":
                 l=l.strip()
+                #print("Round script:",l)
                 if "<" in l:
                     l=l.split("<")
                     var=l[0].strip()
@@ -187,21 +205,29 @@ class CharacterData:
             else:
                 print("Unknown mode:",mode)
                 raise ValueError("Unknown mode in character data file")
-    
+    def run_line(self,var,cmdobj):
+        damage,self.variables[var],crit=cmdobj.execute(self)
+        self.variables[var+".crit_"]=crit
+        label=cmdobj.cmd_name
+        if label[0]=="~": label=label[1:]
+        if crit:
+            label+=" (Critical)"
+        return label,damage,crit
     def run_round(self,rid=None):
         if rid is not None:
             if rid in self.specific_round_scripts:
                 rscript=self.specific_round_scripts[rid]
             else:
                 rscript=self.round_script
+            self.variables["round"]=rid
+        else:
+            rscript=self.round_script
+            self.variables["round"]=0
+        #print("Running round",self.variables["_round_"])
         DPR=0
         paired_damage=[]
         for r in rscript:
-            damage,self.variables[r[0]],crit=r[1].execute(self)
-            self.variables[r[0]+".crit_"]=crit
-            dlabel=r[1].cmd_name
-            if crit:
-                dlabel+=" (Critical)"
+            dlabel,damage,_=self.run_line(r[0],r[1])
             paired_damage.append((dlabel,damage))
             DPR+=damage
         return DPR,paired_damage
@@ -255,7 +281,7 @@ class CharacterData:
     def estimate_adventuring_day(self,n_iter=1000,n_combats=4,short_rests=[2],n_rounds=4):
         dpr_list=[]
         itemwise_damage=dict()
-        for i in range(n_iter):
+        for i in tqdm.tqdm(range(n_iter),desc="Estimating adventuring day",ncols=100):
             self.reset()
             for c in range(n_combats):
                 for r in range(1,n_rounds+1,1):
@@ -291,18 +317,20 @@ class CharacterData:
     
     def short_rest(self):
         for r in self.shortrest_script:
-            _,self.variables[r[0]],crit=r[1].execute(self)
-            self.variables[r[0]+".crit_"]=crit
+            self.run_line(r[0],r[1])
         return 0,[]
 
 class Command:
     def __init__(self,cmdstr):
         self.cmd=cmdstr
+        self.is_alias=False
         self._parseCommand()
     
     def _parseCommand(self):
         cmd_blocks=self.cmd.split(",")
         self.cmd_name=cmd_blocks[0].strip()
+        if self.cmd_name[0]=="~":
+            self.is_alias=True
         self.cmd_params=[]
         for c in cmd_blocks[1:]:
             c=c.strip()
@@ -310,7 +338,10 @@ class Command:
     
     def execute(self,chardata):
         try:
-            sel_tactic=chardata.tactics[self.cmd_name]
+            if self.is_alias:
+                pass
+            else:
+                sel_tactic=chardata.tactics[self.cmd_name]
         except:
             #print(chardata.variables)
             ecomm=str(chardata.parse_string(self.cmd))
@@ -351,8 +382,16 @@ class Command:
                     else:
                         raise ValueError("Variable not found in character data! "+c_var)
         #print(chardata.variables)
-        ret=sel_tactic.get_round_damage(chardata,p_adv=p_adv,p_disadv=p_disadv,n_dice=n_dice,crit_range=crit_range)
-        return ret
+        if self.is_alias:
+            total_damage=0
+            crit=False
+            for a in chardata.aliases[self.cmd_name[1:]]:
+                label,damage,crit=chardata.run_line(a[0],a[1])
+                total_damage+=damage
+            return total_damage,True,crit
+        else:
+            ret=sel_tactic.get_round_damage(chardata,p_adv=p_adv,p_disadv=p_disadv,n_dice=n_dice,crit_range=crit_range)
+            return ret
 
 def summarize_round_statistics(stats,breakdown=True):
     # Pretty print a banner
