@@ -1,0 +1,48 @@
+; Champion Fighter (Level 7)
+@Attributes ; Point Buy (Human: Magic Initiate Druid, +1STR Polearm Master +1STR Sentinel)
+STR=4 ; 19
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=0 ; 10
+CHA=-1 ; 8
+PROF=3 ; Proficiency Bonus (Level-based)
+
+; AC starts at 14. Increase +1 at 4,5,8,9,13,17
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=7
+ENEMY_AC=16
+ACTION_SURGES=1
+
+@Tactics
+Melee_Staff,1d20+$STR+$PROF,%ENEMY_AC,1d10+$STR+2,0
+Melee_Staff_Rxn,1d20+$STR+$PROF,%ENEMY_AC,1d10+$STR+2,0
+Melee_Polearm,1d20+$STR+$PROF,%ENEMY_AC,1d4+$STR+2,0
+ActionSurge,None
+
+@Round
+prone<False ; Does the enemy fall prone?
+
+h1<Melee_Staff,crit=19 ; Crit on 19 or 20
+prone<$h1 and chance(0.5) ; 50% chance on a hit to fall prone
+h1<Melee_Staff,adv=$prone,crit=19
+prone<$prone or ($h1 and chance(0.5)) ; If not already fallen prone, check if topple succeeds this time
+
+surge<ActionSurge,consume=1 ACTION_SURGES
+h1<Melee_Staff,$surge,adv=$prone,crit=19
+prone<$prone or ($h1 and chance(0.5)) ; If not already fallen prone, check if topple succeeds this time
+h1<Melee_Staff,$surge,adv=$prone,crit=19
+prone<$prone or ($h1 and chance(0.5)) ; If not already fallen prone, check if topple succeeds this time
+
+Melee_Polearm,$round>1,adv=$prone,crit=19 ; Bonus action attack. Advantage if prone, only on rounds 2-4
+
+Melee_Staff_Rxn,0.5,crit=19 ; Reaction attack 50% of the time from polearm master (sentinel added)
+
+@ShortRest
+ACTION_SURGES<1

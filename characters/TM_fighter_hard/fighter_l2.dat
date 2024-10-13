@@ -1,0 +1,35 @@
+; Champion Fighter (Level 2)
+@Attributes ; Point Buy (Human: Magic Initiate Druid)
+STR=3 ; 17
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=0 ; 10
+CHA=-1 ; 8
+PROF=2 ; Proficiency Bonus (Level-based)
+
+; AC starts at 14. Increase +1 at 4,5,8,9,13,17
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=2
+ENEMY_AC=14
+ACTION_SURGES=1
+
+@Tactics
+Melee_Staff,1d20+$STR+$PROF,%ENEMY_AC,1d8+$STR+2,0 ; Shilleilagh allows using STR if you want. Staff has Topple. Duelling fighting style
+ActionSurge,None
+
+@Round
+prone<False ; Does the enemy fall prone?
+h1<Melee_Staff
+prone<$h1 and chance(0.5) ; 50% chance on a hit to fall prone
+surge<ActionSurge,consume=1 ACTION_SURGES
+Melee_Staff,$surge,adv=$prone
+
+@ShortRest
+ACTION_SURGES<1

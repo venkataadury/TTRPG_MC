@@ -1,0 +1,64 @@
+; Champion Fighter (Level 13)
+@Attributes ; Point Buy (Human: Magic Initiate Druid, +1STR Polearm Master +1STR Sentinel +1STR ShieldMaster +1CON HeavyArmor Master)
+STR=5 ; 20
+DEX=2 ; 14
+CON=3 ; 17
+INT=-1 ; 8
+WIS=0 ; 10
+CHA=-1 ; 8
+PROF=5 ; Proficiency Bonus (Level-based)
+
+; AC starts at 14. Increase +1 at 4,5,8,9,13,17
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=13 ; Heroic Inspiration every turn
+ENEMY_AC=19
+ACTION_SURGES=1
+SHIELD_BASHES=1
+HEROIC_INSPIRATIONS=1
+
+@Tactics
+Melee_Staff,1d20+$STR+$PROF,%ENEMY_AC,1d12+$STR+2,0 ; Shilleilagh goes up to a d12
+Melee_Staff_Rxn,1d20+$STR+$PROF,%ENEMY_AC,1d12+$STR+2,0
+Melee_Polearm,1d20+$STR+$PROF,%ENEMY_AC,1d4+$STR+2,0
+ActionSurge,None
+ShieldBash,None
+
+@Alias: StaffAttack
+h1<Melee_Staff,adv=$prone or (not $h1),crit=19 ; Now get advantage even if the previous attack misses
+hre<Melee_Staff,not $h1,crit=19,consume=1 HEROIC_INSPIRATIONS ; Whenever you miss, check if you can turn it into a hit with heroic inspiration
+h1<$h1 or $hre ; Hit if either works
+prone<$prone or ($h1 and chance(0.5)) ; If not already fallen prone, check if topple succeeds this time
+sbash<ShieldBash,$h1 and chance(0.6),consume=1 SHIELD_BASHES ; On a hit, try to use shield bash
+prone<$prone or $sbash
+
+@Alias: StaffAttack_ActionSurge ; Helps separate final damage into action-surge and non-action-surge
+~StaffAttack
+~StaffAttack
+~StaffAttack
+
+@Round
+; Studied Attacks activates (If any attack misses, get advantage on the next one)
+prone<False ; Does the enemy fall prone?
+h1<True
+
+~StaffAttack
+~StaffAttack
+~StaffAttack ; Another extra attack now
+
+surge<ActionSurge,consume=1 ACTION_SURGES
+~StaffAttack_ActionSurge,$surge ; Three more attacks if action surge can be activated
+
+Melee_Polearm,$round>1,adv=$prone,crit=19 ; Bonus action attack. Advantage if prone, only on rounds 2-4.
+
+Melee_Staff_Rxn,0.5,crit=19 ; Reaction attack 50% of the time from polearm master (sentinel added)
+SHIELD_BASHES<1 ; Reset the option to shield bash (for next round)
+HEROIC_INSPIRATIONS<1 ; Get back heroic inspirations (for next round)
+
+@ShortRest
+ACTION_SURGES<1
