@@ -67,7 +67,7 @@ class Tactic:
         return self.damage(charsheet,hit,crit),hit,crit
 
 class CharacterData:
-    def __init__(self,datafile):
+    def __init__(self,datafile,silent=False):
         self.file=datafile
         self.attributes=dict()
         self.globals=dict()
@@ -76,7 +76,7 @@ class CharacterData:
         self.round_script=[]
         self.specific_round_scripts=dict()
         self.shortrest_script=[]
-        self._loadData()
+        self._loadData(silent=silent)
         self._memorize()
     
     def _memorize(self):
@@ -87,7 +87,7 @@ class CharacterData:
         for v in self.mem_variables:
             self.variables[v]=self.mem_variables[v]
 
-    def _loadData(self):
+    def _loadData(self,silent=False):
         fl=open(self.file,"r")
         mode=None
         mode_param=None
@@ -115,7 +115,8 @@ class CharacterData:
                 else:
                     mode=l[0].strip()
                     mode_param=None
-                print("Found section:",mode,"with parameter:",mode_param)
+                if not silent:
+                    print("Found section:",mode,"with parameter:",mode_param)
                 continue
 
             if mode is None: continue
@@ -124,26 +125,26 @@ class CharacterData:
                 atval=float(l[1].strip())
                 atname=l[0].strip()
                 self.attributes[atname]=atval
-                print("\tAttribute:",atname+"="+str(atval))
+                if not silent: print("\tAttribute:",atname+"="+str(atval))
             elif mode=="Variables":
                 l=l.split("=")
                 atval=str(l[1]).strip()
                 atname=l[0].strip()
                 self.variables[atname]=atval
-                print("\tVariable:",atname+"="+str(atval))
+                if not silent: print("\tVariable:",atname+"="+str(atval))
             elif mode=="Globals":
                 l=l.split("=")
                 atval=str(l[1]).strip()
                 atname=l[0].strip()
                 self.globals[atname]=atval
-                print("\tGlobal:",atname+"="+str(atval))
+                if not silent: print("\tGlobal:",atname+"="+str(atval))
             elif mode=="Tactics":
                 l=l.split(",")
                 tname=l[0].strip()
                 aroll=l[1].strip()
                 if aroll=="None":
                     self.tactics[tname]=Tactic("1d20",1,"0","0") # Random tactic
-                    print("\tBlank tactic:",tname)
+                    if not silent: print("\tBlank tactic:",tname)
                     continue
                 dc=int(eval(l[2].strip()))
                 tsucc=l[3].strip()
@@ -154,7 +155,7 @@ class CharacterData:
                 else: extra_crit_damage=None
 
                 self.tactics[tname]=Tactic(aroll,dc,tsucc,tfail,extra_crit_damage=extra_crit_damage)
-                print("\tFound tactic:",tname," -\t",tsucc," (or",tfail if tfail is not None else 0,"on failure)")
+                if not silent: print("\tFound tactic:",tname," -\t",tsucc," (or",tfail if tfail is not None else 0,"on failure)")
             elif mode=="Round":
                 l=l.strip()
                 if "<" in l:
@@ -170,7 +171,7 @@ class CharacterData:
                         self.specific_round_scripts[int(mode_param)].append((var,Command(cmd)))
                     else:
                         self.specific_round_scripts[int(mode_param)]=[(var,Command(cmd))]
-                    print("\tRegistered round script for round",mode_param,"with command:",cmd,"for variable:",var)
+                    if not silent: print("\tRegistered round script for round",mode_param,"with command:",cmd,"for variable:",var)
                 else:
                     self.round_script.append((var,Command(cmd)))
             elif mode=="ShortRest":
@@ -344,24 +345,17 @@ class Command:
         ret=sel_tactic.get_round_damage(chardata,p_adv=p_adv,p_disadv=p_disadv,n_dice=n_dice,crit_range=crit_range)
         return ret
 
-def summarize_round_statistics(stats):
+def summarize_round_statistics(stats,breakdown=True):
     # Pretty print a banner
     print("\nRound Statistics")
     print("-"*20)
     print("Total Mean DPR:",round(stats[0],3),"+/-",round(stats[2],3))
     print("Observed DPR variation:",stats[1])
-    print("Item-wise damage:")
-    for i in stats[3]:
-        print("\t",i,":",round(stats[3][i][0],3),"+/-",round(stats[3][i][2],3),"(Variation:",round(stats[3][i][1],3),")")
-
-ch_lv1=CharacterData("/home/venkata/python/TTRPG_MC/characters/TM_fighter/fighter_l20.dat")
-print("Setup complete")
-
-n_comb=ch_lv1.globals["Combats"]
-n_rounds=ch_lv1.globals["Rounds"]
-short_rests=ch_lv1.globals["ShortRest"].split(",")
-print("Start analysis:")
-print("Estimating adventuring day for",n_comb,"combats with short rests before combat IDs",short_rests)
-round_stats=ch_lv1.estimate_adventuring_day(2000,n_combats=int(n_comb),short_rests=[int(x) for x in short_rests],n_rounds=int(n_rounds))
-print("Stats gathered",flush=True)
-summarize_round_statistics(round_stats)
+    if breakdown:
+        print("Item-wise damage:")
+        # Create list of all items sorted by name
+        items=sorted(stats[3].keys())
+        for i in items:
+            #Ignore stats with mean 0
+            if stats[3][i][0]<1e-6: continue
+            print("\t",i,":",round(stats[3][i][0],3),"+/-",round(stats[3][i][2],3),"(Variation:",round(stats[3][i][1],3),")")
