@@ -1,4 +1,4 @@
-; Base Fighter (Level 6)
+; Base Fighter (Level 7)
 @Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster)
 STR=4 ; 19
 DEX=2 ; 14
@@ -16,7 +16,7 @@ Combats=4 ; Per day (per long rest)
 ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
 
 @Variables
-Level=1
+Level=7
 ENEMY_AC=16
 ACTION_SURGES=1
 
@@ -26,12 +26,17 @@ Melee_Greatsword_Bonus,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR,$STR ; Can't add PB to
 ActionSurge,None
 
 @Round
-Melee_Greatsword
-Melee_Greatsword ; Extra Attack
-Melee_Greatsword_Bonus,0.1 ; Great Weapon Master Attack (10% chance)
+have_crit<False ; Record if you get a crit
+h1<Melee_Greatsword
+have_crit<$have_crit or $h1.crit_
+h1<Melee_Greatsword ; Extra Attack
+have_crit<$have_crit or $h1.crit_
 surge<ActionSurge,consume=1 ACTION_SURGES
-Melee_Greatsword,$surge ; One more attack if you action surge
-Melee_Greatsword,$surge ; Extra Attack
+h1<Melee_Greatsword,$surge ; One more attack if you action surge
+have_crit<$have_crit or $h1.crit_
+h1<Melee_Greatsword,$surge ; Extra Attack
+have_crit<$have_crit or $h1.crit_
+Melee_Greatsword_Bonus,$have_crit ; Great Weapon Master Attack (if you get a crit)
 
 @ShortRest
 ACTION_SURGES<1

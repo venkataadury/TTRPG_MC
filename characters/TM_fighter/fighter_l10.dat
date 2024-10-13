@@ -1,5 +1,5 @@
 ; Base Fighter (Level 10)
-@Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster, +1STR Charger)
+@Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster +1STR Charger)
 STR=5 ; 20
 DEX=2 ; 14
 CON=3 ; 16
@@ -27,13 +27,18 @@ Charger,1d20,0,1d8,0 ; Charger deals additional 1d8 damage on first attack of a 
 ActionSurge,None
 
 @Round
+have_crit<False ; Record if you get a crit
 h1<Melee_Greatsword
+have_crit<$have_crit or $h1.crit_
 Charger,$h1 and chance(0.5); First attack each round gets charger (if hit). Even then, 50% chance to charge at enemy
-Melee_Greatsword ; Extra Attack
-Melee_Greatsword_Bonus,0.1 ; Great Weapon Master Attack (10% chance)
+h1<Melee_Greatsword ; Extra Attack
+have_crit<$have_crit or $h1.crit_
 surge<ActionSurge,consume=1 ACTION_SURGES
-Melee_Greatsword,$surge ; One more attack if you action surge
-Melee_Greatsword,$surge ; Extra Attack
+h1<Melee_Greatsword,$surge ; One more attack if you action surge
+have_crit<$have_crit or $h1.crit_
+h1<Melee_Greatsword,$surge ; Extra Attack
+have_crit<$have_crit or $h1.crit_
+Melee_Greatsword_Bonus,$have_crit ; Great Weapon Master Attack (if you get a crit)
 
 @ShortRest
 ACTION_SURGES<1

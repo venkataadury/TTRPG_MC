@@ -1,5 +1,5 @@
 ; Base Fighter (Level 20)
-@Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster, +1STR Charger, Random feat, Random feat, +1STR Epic boon of irresistable offence)
+@Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster +1STR Charger, Random Feat, Random Feat, Boon of irresistable offence)
 STR=5 ; 21
 DEX=2 ; 14
 CON=3 ; 16
@@ -18,28 +18,38 @@ ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Mul
 @Variables
 Level=20
 ENEMY_AC=20
-ACTION_SURGES=2 ; Two action surges now
-EXTRA_CRIT_DAMAGE=21 ; STR Value
+ACTION_SURGES=2 ; Second Action Surge!
 
 @Tactics
-Melee_Greatsword,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR+$PROF,$STR,$EXTRA_CRIT_DAMAGE ; Extra crit damage due to boon of irresistable offence
-Melee_Greatsword_Bonus,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR,$STR,$EXTRA_CRIT_DAMAGE ; Can't add PB to bonus action attack
+Melee_Greatsword,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR+$PROF,$STR,21 ; Added crit damage of 21 on a crit
+Melee_Greatsword_Bonus,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR,$STR,21 ; Can't add PB to bonus action attack
 Charger,1d20,0,1d8,0 ; Charger deals additional 1d8 damage on first attack of a round
 ActionSurge,None
 
 @Round
 ; Now Studied attacks activates
+have_crit<False ; Record if you get a crit
 h1<Melee_Greatsword
+have_crit<$have_crit or $h1.crit_
 Charger,$h1 and chance(0.5); First attack each round gets charger (if hit). Even then, 50% chance to charge at enemy
-h1<Melee_Greatsword,adv=not $h1 ; Extra Attack
+h1<Melee_Greatsword,adv=not $h1 ; Extra Attack (has advantage if first missed)
+have_crit<$have_crit or $h1.crit_
 h1<Melee_Greatsword,adv=not $h1 ; Extra Attack 2
+have_crit<$have_crit or $h1.crit_
 h1<Melee_Greatsword,adv=not $h1 ; Extra Attack 3
-Melee_Greatsword_Bonus,0.24,adv=not $h1 ; Great Weapon Master Attack (24% chance)
+have_crit<$have_crit or $h1.crit_
+
 surge<ActionSurge,consume=1 ACTION_SURGES
 h1<Melee_Greatsword,$surge,adv=not $h1 ; One more attack if you action surge
+have_crit<$have_crit or $h1.crit_
 h1<Melee_Greatsword,$surge,adv=not $h1 ; Extra Attack
+have_crit<$have_crit or $h1.crit_
 h1<Melee_Greatsword,$surge,adv=not $h1 ; Extra Attack 2
+have_crit<$have_crit or $h1.crit_
 h1<Melee_Greatsword,$surge,adv=not $h1 ; Extra Attack 3
+have_crit<$have_crit or $h1.crit_
+
+Melee_Greatsword_Bonus,$have_crit,adv=not $h1 ; Great Weapon Master Attack (if you get a crit)
 
 @ShortRest
 ACTION_SURGES<2

@@ -208,9 +208,16 @@ class CharacterData:
         
     def parse_string(self,string):
         for att in self.attributes:
+            if "." in att: string=string.replace("$"+att,str(self.attributes[att]))
+        for v in self.variables:
+            if "." in v: string=string.replace("$"+v,str(self.variables[v]))
+                
+        for att in self.attributes:
             string=string.replace("$"+att,str(self.attributes[att]))
         for v in self.variables:
             string=string.replace("$"+v,str(self.variables[v]))
+        string=string.strip()
+
         try:
             return str(eval(string))
         except:
