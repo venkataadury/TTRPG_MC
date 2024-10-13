@@ -1,0 +1,35 @@
+; Champion Fighter (Level 9)
+@Attributes ; Point Buy (Start: 16,14,16,8,12,8 -> Lvl4: STR+2, Lvl8: STR+2)
+STR=5 ; 20
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=1 ; 12
+CHA=-1 ; 8
+PROF=4 ; Proficiency Bonus (Level-based)
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=9
+ACTION_SURGES=1
+
+@Tactics
+Melee_Maul,1d20+$STR+$PROF,16,2d6+$STR,0 ; Maul
+Melee_Maul_Surge,1d20+$STR+$PROF,16,2d6+$STR,0 ; Maul (specific to action surge - just to separate the damage)
+ActionSurge,None
+
+@Round 
+h1<Melee_Maul
+topple<chance(0.6) and $h1 ; Successfully toppled if hit with 60% chance (chance for enemy to fail save)
+h2<Melee_Maul,adv=$topple ; Advantage if topple succeeded
+topple<$topple or (chance(0.6) and $h2)
+surge<ActionSurge,$topple,consume=1 ACTION_SURGES ; Action surge IF toppled
+Melee_Maul_Surge,$surge,adv=1 ; Attacks are now with advantage because of topple. Attacks only activate on the round of action surge
+Melee_Maul_Surge,$surge,adv=1 ; Attacks are now with advantage because of topple
+
+@ShortRest
+ACTION_SURGES<1

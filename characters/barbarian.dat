@@ -1,0 +1,38 @@
+; Barbarian (Level 9)
+@Attributes ; Point Buy (Start: 16,14,16,8,12,8 -> Lvl4: STR+2, Lvl8: STR+2)
+STR=5 ; 20
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=1 ; 12
+CHA=-1 ; 8
+PROF=4 ; Proficiency Bonus (Level-based)
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=9
+RAGES=4
+RAGE_DAMAGE=3
+
+@Tactics
+Melee_Warhammer,1d20+$STR+$PROF,16,1d10+$STR+$RAGE_DAMAGE,0 ; Warhammer (Push)
+Melee_GreatSword,1d20+$STR+$PROF,16,1d12+$STR+$RAGE_DAMAGE,$STR ; Greatsword (Graze)
+Melee_GreatSword_Brutal,1d20+$STR+$PROF,16,1d12+1d10+$STR+$RAGE_DAMAGE,$STR ; Brutal Critical
+Rage,None ; Placeholder to start rage
+
+@Round:1
+has_rage<Rage,consume=1 RAGES ; Setup rage if available
+RAGE_DAMAGE<3 if $has_rage else 0 ; Ensure rage was available. The only contribution of rage to damage is the additional damage with each attack
+Melee_GreatSword_Brutal
+Melee_GreatSword_Brutal
+
+@Round 
+Melee_GreatSword_Brutal ; Reckless attack (but no advantage)
+Melee_GreatSword_Brutal ; 2 attacks
+
+@ShortRest
+RAGES<$RAGES+1 ; Regain one rage

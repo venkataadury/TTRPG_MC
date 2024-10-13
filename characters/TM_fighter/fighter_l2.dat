@@ -1,0 +1,33 @@
+; Base Fighter (Level 2)
+@Attributes ; Point Buy
+STR=3 ; 17
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=0 ; 10
+CHA=-1 ; 8
+PROF=2 ; Proficiency Bonus (Level-based)
+
+; AC starts at 14. Increase +1 at 4,5,8,9,13,17
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=1
+ENEMY_AC=14
+ACTION_SURGES=1
+
+@Tactics
+Melee_Greatsword,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR,$STR ; Graze deals damage even on a miss
+ActionSurge,None
+
+@Round
+Melee_Greatsword
+surge<ActionSurge,consume=1 ACTION_SURGES
+Melee_Greatsword,$surge ; One more attack if you action surge
+
+@ShortRest
+ACTION_SURGES<1

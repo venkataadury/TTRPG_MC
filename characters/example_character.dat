@@ -1,0 +1,23 @@
+@Attributes
+STR=4
+DEX=2
+CON=3
+INT=-1
+WIS=3
+CHA=4
+PROF=2 ; Proficiency Bonus
+
+@Variables
+Level=8
+
+@Tactics
+Melee,1d20+$STR+$PROF,15,1d8+$STR 0 ; Action AttackRoll/Saving Throw AC/DC Damage(Success) Damage(Fail - i.e. graze)
+Polearm,1d20+$STR+$PROF,15,1d4+$STR 0 ; Polearm butt attack
+Ranged,1d20+$DEX+$PROF,15,1d6+$DEX ; Default damage on failure = 0
+Spell,1d20+3,8+$PROF+$CHA,0,1d8 ; Spell does 0 damage on a success and 18 on a failed saving throw
+Dash,None
+
+@Round ; Same thing written in a different way
+h1<Melee,adv=0.2,crit=19
+Melee,adv=not $h1,crit=19
+Polearm,0.2,crit=19

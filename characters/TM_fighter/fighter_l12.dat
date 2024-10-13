@@ -1,0 +1,41 @@
+; Base Fighter (Level 12)
+@Attributes ; Point Buy (+1STR Mage-Slayer, +1STR GreatweaponMaster, +1STR Charger, Random feat)
+STR=5 ; 20
+DEX=2 ; 14
+CON=3 ; 16
+INT=-1 ; 8
+WIS=0 ; 10
+CHA=-1 ; 8
+PROF=4 ; Proficiency Bonus (Level-based)
+
+; AC starts at 14. Increase +1 at 4,5,8,9,13,17
+
+@Globals
+Rounds=4 ; Rounds per combat
+Combats=4 ; Per day (per long rest)
+ShortRest=2 ; (Short rest just before 3rd combat - Combat IDs start from 0). Multiple short rests can be given with commas (i.e. ShortRest=1,2)
+
+@Variables
+Level=11
+ENEMY_AC=18
+ACTION_SURGES=1
+
+@Tactics
+Melee_Greatsword,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR+$PROF,$STR ; Graze deals damage even on a miss, GWM adds PB to damage too
+Melee_Greatsword_Bonus,1d20+$STR+$PROF,%ENEMY_AC,2d6+$STR,$STR ; Can't add PB to bonus action attack
+Charger,1d20,0,1d8,0 ; Charger deals additional 1d8 damage on first attack of a round
+ActionSurge,None
+
+@Round
+h1<Melee_Greatsword
+Charger,$h1 and chance(0.5); First attack each round gets charger (if hit). Even then, 50% chance to charge at enemy
+Melee_Greatsword ; Extra Attack
+Melee_Greatsword ; Extra Attack 2
+Melee_Greatsword_Bonus,0.14 ; Great Weapon Master Attack (14% chance)
+surge<ActionSurge,consume=1 ACTION_SURGES
+Melee_Greatsword,$surge ; One more attack if you action surge
+Melee_Greatsword,$surge ; Extra Attack
+Melee_Greatsword,$surge ; Extra Attack 2
+
+@ShortRest
+ACTION_SURGES<1
