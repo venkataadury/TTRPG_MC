@@ -90,8 +90,11 @@ class CharacterData:
             self.variables[v]=self.mem_variables[v]
 
     def _loadData(self,silent=False):
-        fl=open(self.file,"r")
-        mode=None
+        self._loadDataFrom(self.file,silent=silent)
+
+    def _loadDataFrom(self,filename,silent=False,start_mode=None):
+        fl=open(filename,"r")
+        mode=start_mode
         mode_param=None
         for l in fl:
             l=l.strip()
@@ -119,6 +122,16 @@ class CharacterData:
                     mode_param=None
                 if not silent:
                     print("Found section:",mode,"with parameter:",mode_param)
+                continue
+            
+            if l[0]==">": # Import from an external file
+                l=l[1:].strip()
+                if not silent:
+                    print("Importing from file:",l)
+                base_dir=filename.split("/")
+                base_dir="/".join(base_dir[:-1])+"/"
+                if not silent: print("Importing from:",base_dir+l)
+                self._loadDataFrom(base_dir+l,silent=silent,start_mode=mode)
                 continue
 
             if mode is None: continue
@@ -156,6 +169,8 @@ class CharacterData:
                 if len(l)>5: extra_crit_damage=l[5].strip()
                 else: extra_crit_damage=None
 
+                if tname in self.tactics:
+                    if not silent: print("Replacing tactic:",tname)
                 self.tactics[tname]=Tactic(aroll,dc,tsucc,tfail,extra_crit_damage=extra_crit_damage)
                 if not silent: print("\tFound tactic:",tname," -\t",tsucc," (or",tfail if tfail is not None else 0,"on failure)")
             elif mode=="Alias":
